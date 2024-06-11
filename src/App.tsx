@@ -8,6 +8,7 @@ import './App.css';
  */
 interface IState {
   data: ServerRespond[],
+  showGraph: boolean,
 }
 
 /**
@@ -22,6 +23,7 @@ class App extends Component<{}, IState> {
       // data saves the server responds.
       // We use this state to parse data down to the child element (Graph) as element property
       data: [],
+      showGraph: false,
     };
   }
 
@@ -29,18 +31,45 @@ class App extends Component<{}, IState> {
    * Render Graph react component with state.data parse as property data
    */
   renderGraph() {
-    return (<Graph data={this.state.data}/>)
-  }
+    if (this.state.showGraph) {
+      return (<Graph data={this.state.data}/>)
+    }
+  } 
 
   /**
    * Get new data from server and update the state with the new data
    */
+  // This function is designed to continuously fetch data from the server at regular intervals 
+  // (every 100 milliseconds) and update the component's state with the new data. 
+  // It stops after running 1000 times.
   getDataFromServer() {
-    DataStreamer.getData((serverResponds: ServerRespond[]) => {
-      // Update the state by creating a new array of data that consists of
-      // Previous data in the state and the new data from server
-      this.setState({ data: [...this.state.data, ...serverResponds] });
-    });
+    // init a counter var (x) to keep track of the number of intervals
+    let x = 0;
+
+    // declare a new interval that will execute the provuded function ever 100 ms.
+    const interval = setInterval(() => {
+
+      // Call the getData method from DataStreamer, which fetches data from the server
+      // The getData method takes a callback function that processes the server response
+      DataStreamer.getData((serverResponds: ServerRespond[]) => {
+        
+        // In the callback function, update the component's state with the new data from the server
+        // The new state consists of the data from the server and sets showGraph to true
+        this.setState({ 
+          data: serverResponds,
+          showGraph: true,
+        });
+      });
+
+      // Increment the counter variable to track how many times the interval has run
+      x++;
+
+      // Check if the counter variable has exceeded 1000 (meaning the interval has run 1000 times)
+      if (x > 1000) {
+        // If so, clear the interval to stop fetching data
+        clearInterval(interval);
+      }
+    }, 100); // The interval is set to 100 milliseconds
   }
 
   /**
